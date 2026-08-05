@@ -147,8 +147,8 @@ const App = {
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">AI maxsus shabloni / Yo'riqnomasi</label>
-                                        <textarea v-model="channel.settings_template" placeholder="Masalan: Har doim postni quyidagi shablon bo'yicha tayyorla: ..." rows="3" class="w-full glass-input rounded-lg px-3 py-1.5 text-xs"></textarea>
+                                        <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">AI maxsus shabloni / Yo’riqnomasi</label>
+                                        <textarea v-model="channel.settings_template" placeholder="Masalan: Har doim postni quyidagi shablon bo’yicha tayyorla: ..." rows="3" class="w-full glass-input rounded-lg px-3 py-1.5 text-xs"></textarea>
                                     </div>
                                     <button @click="saveChannel(channel)" class="w-full mt-2 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 font-bold rounded-lg text-xs transition duration-300">
                                         💾 Sozlamalarni Saqlash
