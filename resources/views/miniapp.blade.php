@@ -70,6 +70,6 @@
 
     <!-- Vue 3 directly loaded from CDN for zero-compilation deployment safety -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="{{ asset('js/miniapp.js') }}"></script>
+    <script src="{{ secure_asset('js/miniapp.js') }}"></script>
 </body>
 </html>
