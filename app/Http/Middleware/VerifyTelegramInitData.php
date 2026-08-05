@@ -95,6 +95,12 @@ class VerifyTelegramInitData
         $secretKey = hash_hmac('sha256', $botToken, 'WebApps', true);
         $computedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
-        return hash_equals($computedHash, $hash);
+        $isValid = hash_equals($computedHash, $hash);
+
+        if (!$isValid) {
+            Log::warning("VerifyTelegramInitData mismatch. TokenPrefix: " . substr($botToken, 0, 10) . "..., ReceivedHash: " . $hash . ", ComputedHash: " . $computedHash . ", Data: " . str_replace("\n", " | ", $dataCheckString));
+        }
+
+        return $isValid;
     }
 }
