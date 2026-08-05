@@ -26,6 +26,7 @@ class GenerateAiPostJob implements ShouldQueue
     protected ?int $loadingMessageId;
     protected string $mediaType;
     protected ?string $mediaUrl;
+    protected bool $ignoreMissing;
 
     /**
      * Create a new job instance.
@@ -36,7 +37,8 @@ class GenerateAiPostJob implements ShouldQueue
         string $prompt,
         ?int $loadingMessageId = null,
         string $mediaType = 'none',
-        ?string $mediaUrl = null
+        ?string $mediaUrl = null,
+        bool $ignoreMissing = false
     ) {
         $this->userId = $userId;
         $this->channelId = $channelId;
@@ -44,6 +46,7 @@ class GenerateAiPostJob implements ShouldQueue
         $this->loadingMessageId = $loadingMessageId;
         $this->mediaType = $mediaType;
         $this->mediaUrl = $mediaUrl;
+        $this->ignoreMissing = $ignoreMissing;
     }
 
     /**
@@ -72,6 +75,13 @@ class GenerateAiPostJob implements ShouldQueue
             if (!empty($customTemplate)) {
                 $aiPrompt .= "MUHIM QOIDA: Siz ushbu postni faqat va faqat quyidagi qat'iy shablon va yo'riqnoma asosida yaratishingiz kerak. Strukturani mutlaqo o'zgartirmang, barcha yozuvlar, tartib va emojilar shablondagidek qolishi shart:\n" .
                              "\"{$customTemplate}\"\n\n";
+
+                if (!$this->ignoreMissing) {
+                    $aiPrompt .= "MA'LUMOTLARNI TEKSHIRISH QOIDASI:\n" .
+                                 "Foydalanuvchi matnini shablon bilan solishtiring. Agar shablondagi muhim va zarur maydonlar (masalan: telefon raqami, narx, krasqa holati, yili, manzili yoki shunga o'xshash aniq ma'lumotlar) foydalanuvchi yuborgan matnda umuman yo'qligi aniqlansa, postni yaratmang! Uning o'rniga faqat va faqat quyidagi formatda javob bering:\n" .
+                                 "MISSING_INFO: [etishmayotgan maydonlar ro'yxati]\n" .
+                                 "Masalan: MISSING_INFO: Narxi, Telefon raqami\n\n";
+                }
             }
 
             $aiPrompt .= "Mavzu: Telegram kanal e'loni\n" .
@@ -88,11 +98,54 @@ class GenerateAiPostJob implements ShouldQueue
                 'action' => 'post_generation',
             ]);
 
+            $textResult = trim($aiResult['text']);
+
+            if (str_starts_with($textResult, 'MISSING_INFO:')) {
+                // Delete loading message if exists
+                if ($this->loadingMessageId) {
+                    $telegram->deleteMessage($user->telegram_id, $this->loadingMessageId);
+                }
+
+                // Create a temporary post with status 'pending_info'
+                $post = Post::create([
+                    'channel_id' => $channel->id,
+                    'draft_content' => $this->prompt, // store original prompt
+                    'final_content' => $textResult, // store the missing info string
+                    'status' => 'pending_info',
+                    'media_type' => $this->mediaType,
+                    'media_url' => $this->mediaUrl,
+                    'ai_provider' => $aiResult['provider'],
+                    'tokens_used' => $aiResult['prompt_tokens'] + $aiResult['completion_tokens'],
+                    'cost' => $aiResult['cost'],
+                ]);
+
+                // Extract missing fields
+                $missingFields = trim(substr($textResult, strlen('MISSING_INFO:')));
+
+                $msg = "⚠️ **Post shablonidagi quyidagi ma'lumotlar topilmadi:**\n\n" .
+                       "• {$missingFields}\n\n" .
+                       "Shusiz ham postni tayyorlayveraymi yoki ma'lumotni kiritasizmi?";
+
+                $params = [
+                    'reply_markup' => json_encode([
+                        'inline_keyboard' => [
+                            [
+                                ['text' => '✅ Shusiz tayyorla', 'callback_data' => "post:skip_missing:{$post->id}"],
+                                ['text' => '✍️ Ma\'lumot kiritaman', 'callback_data' => "post:provide_missing:{$post->id}"]
+                            ]
+                        ]
+                    ])
+                ];
+
+                $telegram->sendMessage($user->telegram_id, $msg, $params);
+                return;
+            }
+
             // 3. Create draft record in DB
             $post = Post::create([
                 'channel_id' => $channel->id,
-                'draft_content' => $aiResult['text'],
-                'final_content' => $aiResult['text'],
+                'draft_content' => $textResult,
+                'final_content' => $textResult,
                 'status' => 'draft',
                 'media_type' => $this->mediaType,
                 'media_url' => $this->mediaUrl,

@@ -127,6 +127,11 @@ class TelegramWebhookController extends Controller
             return $this->handleCustomSchedulingTime($user, $session['data']['post_id'] ?? null, $text);
         }
 
+        // Check if user is typing missing info for a template
+        if ($step === 'awaiting_missing_info') {
+            return $this->handleProvidedMissingInfo($user, $session['data']['post_id'] ?? null, $text);
+        }
+
         // Extract media attachments if any
         $mediaType = 'none';
         $mediaUrl = null;
@@ -307,7 +312,33 @@ class TelegramWebhookController extends Controller
                     break;
                 }
 
-                if ($action === 'approve') {
+                if ($action === 'skip_missing') {
+                    $this->telegram->deleteMessage($user->telegram_id, $messageId);
+                    $loading = $this->telegram->sendMessage($user->telegram_id, "⏳ **AI post tayyorlamoqda (shablon maydonlarisiz)...**");
+                    $loadingMessageId = $loading['result']['message_id'] ?? null;
+
+                    GenerateAiPostJob::dispatch(
+                        $user->id,
+                        $post->channel_id,
+                        $post->draft_content, // original prompt
+                        $loadingMessageId,
+                        $post->media_type,
+                        $post->media_url,
+                        true // ignoreMissing = true
+                    );
+
+                    $post->delete();
+                }
+                elseif ($action === 'provide_missing') {
+                    $this->telegram->deleteMessage($user->telegram_id, $messageId);
+                    $this->stateManager->setState($user->telegram_id, 'awaiting_missing_info', ['post_id' => $post->id]);
+                    $this->telegram->sendMessage(
+                        $user->telegram_id,
+                        "✍️ **Iltimos, yetishmayotgan ma'lumotlarni yozib yuboring.**\n" .
+                        "Masalan: `Narxi 12000$, tel: +998901234567` va hokazo."
+                    );
+                }
+                elseif ($action === 'approve') {
                     // Double submit locks: update current buttons
                     $this->telegram->editMessageReplyMarkup($user->telegram_id, $messageId, [
                         'inline_keyboard' => [[['text' => '⏳ Joylashtirilmoqda...', 'callback_data' => 'done']]]
@@ -681,6 +712,43 @@ class TelegramWebhookController extends Controller
         }
 
         return response()->json(['status' => 'custom_schedule_handled'], 200);
+    }
+
+    /**
+     * Handle user providing missing info for a template.
+     */
+    protected function handleProvidedMissingInfo(User $user, ?int $postId, string $infoInput)
+    {
+        $post = Post::find($postId);
+        if (!$post) {
+            $this->telegram->sendMessage($user->telegram_id, "❌ Tahrirlanayotgan post topilmadi.");
+            $this->stateManager->clearState($user->telegram_id);
+            return response()->json(['status' => 'post_not_found'], 200);
+        }
+
+        $this->stateManager->clearState($user->telegram_id);
+
+        $newPrompt = $post->draft_content . "\n\nYetishmayotgan ma'lumotlar:\n" . $infoInput;
+
+        // Send loading message
+        $loading = $this->telegram->sendMessage($user->telegram_id, "⏳ **AI postni yangilamoqda...**");
+        $loadingMessageId = $loading['result']['message_id'] ?? null;
+
+        // Dispatch new post generation job with full prompt (ignoreMissing = false)
+        GenerateAiPostJob::dispatch(
+            $user->id,
+            $post->channel_id,
+            $newPrompt,
+            $loadingMessageId,
+            $post->media_type,
+            $post->media_url,
+            false // ignoreMissing = false
+        );
+
+        // Delete the temporary pending post
+        $post->delete();
+
+        return response()->json(['status' => 'provided_missing_info_handled'], 200);
     }
 
     /**
