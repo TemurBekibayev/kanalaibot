@@ -123,6 +123,7 @@ class MiniAppApiController extends Controller
             'hashtags' => 'nullable|string',
             'auto_delete_hours' => 'required|integer|min:0',
             'format_style' => 'required|string|in:default,bold,italic',
+            'custom_template' => 'nullable|string',
         ]);
 
         try {
@@ -130,6 +131,7 @@ class MiniAppApiController extends Controller
             $settings['hashtags'] = $validated['hashtags'];
             $settings['auto_delete_hours'] = $validated['auto_delete_hours'];
             $settings['format_style'] = $validated['format_style'];
+            $settings['custom_template'] = $validated['custom_template'] ?? null;
 
             $channel->update([
                 'settings' => $settings

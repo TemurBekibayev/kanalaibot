@@ -17,6 +17,8 @@ use Filament\Tables\Actions\DeleteAction;
 
 use BackedEnum;
 
+use Filament\Forms\Components\Textarea;
+
 class ChannelResource extends Resource
 {
     protected static ?string $model = Channel::class;
@@ -47,6 +49,27 @@ class ChannelResource extends Resource
                 Toggle::make('is_active')
                     ->label('Faol')
                     ->required(),
+                
+                // Nested JSON settings fields
+                TextInput::make('settings.hashtags')
+                    ->label('Kanal uchun standart hashtaglar')
+                    ->placeholder('#mashina #avto'),
+                Select::make('settings.format_style')
+                    ->label('Formatlash uslubi')
+                    ->options([
+                        'default' => 'Default',
+                        'bold' => 'Bold',
+                        'italic' => 'Italic',
+                    ])
+                    ->default('default'),
+                TextInput::make('settings.auto_delete_hours')
+                    ->label('Avtomatik o\'chirish (soat, 0 = o\'chirilmasin)')
+                    ->numeric()
+                    ->default(0),
+                Textarea::make('settings.custom_template')
+                    ->label('AI uchun maxsus shablon / Yo\'riqnoma')
+                    ->placeholder("Masalan: Har doim postni quyidagi shablon bo'yicha tayyorla:\n🚗 Rusmi: [Model]\n📅 Yili: [Yil]\n👣 Yurgani: [km]")
+                    ->rows(5),
             ]);
     }
 

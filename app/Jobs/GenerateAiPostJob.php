@@ -64,8 +64,17 @@ class GenerateAiPostJob implements ShouldQueue
 
         try {
             // 1. Construct prompt for AI
-            $aiPrompt = "Siz tajribali Telegram kanal menejerisiz. Foydalanuvchi sizga qisqa e'lon matnini yuboradi. Siz bu matndan chiroyli formatlangan, o'quvchini jalb qiluvchi, mos emojilar va tegishli hashtaglar bilan to'liq post yaratishingiz kerak.\n\n" .
-                        "Mavzu: Telegram kanal e'loni\n" .
+            $settings = $channel->settings ?? [];
+            $customTemplate = $settings['custom_template'] ?? null;
+
+            $aiPrompt = "Siz tajribali Telegram kanal menejerisiz. Foydalanuvchi sizga qisqa e'lon matnini yuboradi. Siz bu matndan chiroyli formatlangan, o'quvchini jalb qiluvchi, mos emojilar va tegishli hashtaglar bilan to'liq post yaratishingiz kerak.\n\n";
+
+            if (!empty($customTemplate)) {
+                $aiPrompt .= "MUHIM QOIDA: Siz ushbu postni faqat va faqat quyidagi qat'iy shablon va yo'riqnoma asosida yaratishingiz kerak. Strukturani mutlaqo o'zgartirmang, barcha yozuvlar, tartib va emojilar shablondagidek qolishi shart:\n" .
+                             "\"{$customTemplate}\"\n\n";
+            }
+
+            $aiPrompt .= "Mavzu: Telegram kanal e'loni\n" .
                         "Asl matn: \"{$this->prompt}\"\n\n" .
                         "Qoidalar:\n" .
                         "- Sarlavhani chiroyli emojilar bilan yozing.\n" .
