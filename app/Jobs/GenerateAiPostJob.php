@@ -24,16 +24,26 @@ class GenerateAiPostJob implements ShouldQueue
     protected int $channelId;
     protected string $prompt;
     protected ?int $loadingMessageId;
+    protected string $mediaType;
+    protected ?string $mediaUrl;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(int $userId, int $channelId, string $prompt, ?int $loadingMessageId = null)
-    {
+    public function __construct(
+        int $userId,
+        int $channelId,
+        string $prompt,
+        ?int $loadingMessageId = null,
+        string $mediaType = 'none',
+        ?string $mediaUrl = null
+    ) {
         $this->userId = $userId;
         $this->channelId = $channelId;
         $this->prompt = $prompt;
         $this->loadingMessageId = $loadingMessageId;
+        $this->mediaType = $mediaType;
+        $this->mediaUrl = $mediaUrl;
     }
 
     /**
@@ -75,6 +85,8 @@ class GenerateAiPostJob implements ShouldQueue
                 'draft_content' => $aiResult['text'],
                 'final_content' => $aiResult['text'],
                 'status' => 'draft',
+                'media_type' => $this->mediaType,
+                'media_url' => $this->mediaUrl,
                 'ai_provider' => $aiResult['provider'],
                 'tokens_used' => $aiResult['prompt_tokens'] + $aiResult['completion_tokens'],
                 'cost' => $aiResult['cost'],

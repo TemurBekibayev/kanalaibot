@@ -81,7 +81,7 @@ class TelegramWebhookController extends Controller
     protected function handleMessage(array $message)
     {
         $chatId = $message['chat']['id'];
-        $text = $message['text'] ?? '';
+        $text = $message['text'] ?? $message['caption'] ?? '';
         $fromId = $message['from']['id'] ?? $chatId;
         $username = $message['from']['username'] ?? null;
         $name = $message['from']['first_name'] ?? 'User';
@@ -127,9 +127,28 @@ class TelegramWebhookController extends Controller
             return $this->handleCustomSchedulingTime($user, $session['data']['post_id'] ?? null, $text);
         }
 
+        // Extract media attachments if any
+        $mediaType = 'none';
+        $mediaUrl = null;
+
+        if (isset($message['photo']) && $step !== 'awaiting_payment_proof') {
+            $largestPhoto = end($message['photo']);
+            $fileId = $largestPhoto['file_id'];
+            $mediaUrl = $this->telegram->getFileUrl($fileId);
+            if ($mediaUrl) {
+                $mediaType = 'photo';
+            }
+        } elseif (isset($message['video'])) {
+            $fileId = $message['video']['file_id'];
+            $mediaUrl = $this->telegram->getFileUrl($fileId);
+            if ($mediaUrl) {
+                $mediaType = 'video';
+            }
+        }
+
         // Default flow: treat text as prompt for AI post generation
         if (!empty($text)) {
-            return $this->handlePostPromptInput($user, $text);
+            return $this->handlePostPromptInput($user, $text, $mediaType, $mediaUrl);
         }
 
         return response()->json(['status' => 'ignored_message_type'], 200);
@@ -667,7 +686,7 @@ class TelegramWebhookController extends Controller
     /**
      * Handle user post generation prompt.
      */
-    protected function handlePostPromptInput(User $user, string $prompt)
+    protected function handlePostPromptInput(User $user, string $prompt, string $mediaType = 'none', ?string $mediaUrl = null)
     {
         // 1. Check user channels count (user must have at least 1 channel connected)
         $channel = $user->channels()->where('is_active', true)->first();
@@ -687,7 +706,7 @@ class TelegramWebhookController extends Controller
         $loadingMessageId = $loading['result']['message_id'] ?? null;
 
         // Dispatch background job for AI call and similarity evaluation to avoid Webhook timeout (sync flow)
-        GenerateAiPostJob::dispatch($user->id, $channel->id, $prompt, $loadingMessageId);
+        GenerateAiPostJob::dispatch($user->id, $channel->id, $prompt, $loadingMessageId, $mediaType, $mediaUrl);
 
         return response()->json(['status' => 'post_generation_job_dispatched'], 200);
     }

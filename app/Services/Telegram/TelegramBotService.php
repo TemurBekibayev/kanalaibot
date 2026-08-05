@@ -205,6 +205,23 @@ class TelegramBotService
             return ['status' => false, 'message' => "Bot kanalda admin emas."];
         } catch (Exception $e) {
             return ['status' => false, 'message' => "Kanal ruxsatlarini tekshirishda xatolik: " . $e->getMessage()];
+    }
+
+    /**
+     * Get the direct download URL for a file from Telegram.
+     */
+    public function getFileUrl(string $fileId): ?string
+    {
+        try {
+            $response = $this->callApi('getFile', ['file_id' => $fileId]);
+            $filePath = $response['result']['file_path'] ?? null;
+            if ($filePath) {
+                return "https://api.telegram.org/file/bot{$this->token}/{$filePath}";
+            }
+            return null;
+        } catch (\Exception $e) {
+            Log::channel('telegram_errors')->error("getFileUrl failed for file {$fileId}: " . $e->getMessage());
+            return null;
         }
     }
 
