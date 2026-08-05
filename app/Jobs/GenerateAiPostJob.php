@@ -116,7 +116,7 @@ class GenerateAiPostJob implements ShouldQueue
             // Set up inline keyboards
             $miniAppUrl = env('APP_URL') . "/mini-app/calendar?tg_id=" . $user->telegram_id . "&post_id=" . $post->id;
             
-            $telegram->sendMessage($user->telegram_id, $previewMsg, [
+            $params = [
                 'reply_markup' => json_encode([
                     'inline_keyboard' => [
                         [
@@ -129,7 +129,15 @@ class GenerateAiPostJob implements ShouldQueue
                         ]
                     ]
                 ])
-            ]);
+            ];
+
+            if ($post->media_type === 'photo' && !empty($post->media_url)) {
+                $telegram->sendPhoto($user->telegram_id, $post->media_url, $previewMsg, $params);
+            } elseif ($post->media_type === 'video' && !empty($post->media_url)) {
+                $telegram->sendVideo($user->telegram_id, $post->media_url, $previewMsg, $params);
+            } else {
+                $telegram->sendMessage($user->telegram_id, $previewMsg, $params);
+            }
 
         } catch (Exception $e) {
             Log::channel('ai_errors')->error("GenerateAiPostJob failed: " . $e->getMessage(), [
