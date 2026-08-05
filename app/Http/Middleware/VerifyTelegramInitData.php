@@ -91,8 +91,8 @@ class VerifyTelegramInitData
         $dataCheckString = implode("\n", $dataCheckArr);
 
         // Generate cryptographic keys
-        // Secret key is HMAC-SHA256 of the token with the key "WebApps"
-        $secretKey = hash_hmac('sha256', $botToken, 'WebApps', true);
+        // Secret key is HMAC-SHA256 of the token with the key "WebAppData"
+        $secretKey = hash_hmac('sha256', $botToken, 'WebAppData', true);
         $computedHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
         $isValid = hash_equals($computedHash, $hash);

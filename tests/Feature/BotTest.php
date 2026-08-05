@@ -99,7 +99,7 @@ class BotTest extends TestCase
         $dataCheckString = "auth_date={$queryArr['auth_date']}\nquery_id={$queryArr['query_id']}\nuser={$queryArr['user']}";
 
         // Compute valid HMAC hash
-        $secretKey = hash_hmac('sha256', $mockToken, 'WebApps', true);
+        $secretKey = hash_hmac('sha256', $mockToken, 'WebAppData', true);
         $validHash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
         // Create query payload with hash
