@@ -146,6 +146,10 @@ const App = {
                                             <input type="number" v-model="channel.settings_auto_delete" class="w-full glass-input rounded-lg px-3 py-1.5 text-xs">
                                         </div>
                                     </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">AI maxsus shabloni / Yo'riqnomasi</label>
+                                        <textarea v-model="channel.settings_template" placeholder="Masalan: Har doim postni quyidagi shablon bo'yicha tayyorla: ..." rows="3" class="w-full glass-input rounded-lg px-3 py-1.5 text-xs"></textarea>
+                                    </div>
                                     <button @click="saveChannel(channel)" class="w-full mt-2 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 font-bold rounded-lg text-xs transition duration-300">
                                         💾 Sozlamalarni Saqlash
                                     </button>
@@ -345,6 +349,7 @@ const App = {
                     settings_hashtags: ch.settings?.hashtags || '',
                     settings_format: ch.settings?.format_style || 'default',
                     settings_auto_delete: ch.settings?.auto_delete_hours || 0,
+                    settings_template: ch.settings?.custom_template || '',
                 }));
 
                 // Load Stats summary
@@ -476,7 +481,8 @@ const App = {
                 await apiRequest(url, 'POST', {
                     hashtags: channel.settings_hashtags,
                     format_style: channel.settings_format,
-                    auto_delete_hours: parseInt(channel.settings_auto_delete) || 0
+                    auto_delete_hours: parseInt(channel.settings_auto_delete) || 0,
+                    custom_template: channel.settings_template
                 });
                 message.value = `"${channel.title}" sozlamalari muvaffaqiyatli saqlandi!`;
             } catch (err) {
