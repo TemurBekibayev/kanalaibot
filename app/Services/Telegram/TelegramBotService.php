@@ -203,8 +203,9 @@ class TelegramBotService
             }
 
             return ['status' => false, 'message' => "Bot kanalda admin emas."];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return ['status' => false, 'message' => "Kanal ruxsatlarini tekshirishda xatolik: " . $e->getMessage()];
+        }
     }
 
     /**
