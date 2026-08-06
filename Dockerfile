@@ -11,10 +11,11 @@ RUN apk add --no-cache \
     oniguruma-dev \
     libzip-dev \
     nodejs \
-    npm
+    npm \
+    icu-dev
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache intl
 
 # Install Redis extension
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
