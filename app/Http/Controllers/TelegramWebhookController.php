@@ -135,6 +135,7 @@ class TelegramWebhookController extends Controller
         // Extract media attachments if any
         $mediaType = 'none';
         $mediaUrl = null;
+        $telegramFileId = null;
 
         if (isset($message['photo']) && $step !== 'awaiting_payment_proof') {
             $largestPhoto = end($message['photo']);
@@ -142,18 +143,20 @@ class TelegramWebhookController extends Controller
             $mediaUrl = $this->telegram->getFileUrl($fileId);
             if ($mediaUrl) {
                 $mediaType = 'photo';
+                $telegramFileId = $fileId;
             }
         } elseif (isset($message['video'])) {
             $fileId = $message['video']['file_id'];
             $mediaUrl = $this->telegram->getFileUrl($fileId);
             if ($mediaUrl) {
                 $mediaType = 'video';
+                $telegramFileId = $fileId;
             }
         }
 
         // Default flow: treat text as prompt for AI post generation
         if (!empty($text)) {
-            return $this->handlePostPromptInput($user, $text, $mediaType, $mediaUrl);
+            return $this->handlePostPromptInput($user, $text, $mediaType, $mediaUrl, $telegramFileId);
         }
 
         return response()->json(['status' => 'ignored_message_type'], 200);
@@ -324,7 +327,8 @@ class TelegramWebhookController extends Controller
                         $loadingMessageId,
                         $post->media_type,
                         $post->media_url,
-                        true // ignoreMissing = true
+                        true, // ignoreMissing = true
+                        $post->meta['telegram_file_id'] ?? null
                     );
 
                     $post->delete();
@@ -742,7 +746,8 @@ class TelegramWebhookController extends Controller
             $loadingMessageId,
             $post->media_type,
             $post->media_url,
-            false // ignoreMissing = false
+            false, // ignoreMissing = false
+            $post->meta['telegram_file_id'] ?? null
         );
 
         // Delete the temporary pending post
@@ -754,7 +759,7 @@ class TelegramWebhookController extends Controller
     /**
      * Handle user post generation prompt.
      */
-    protected function handlePostPromptInput(User $user, string $prompt, string $mediaType = 'none', ?string $mediaUrl = null)
+    protected function handlePostPromptInput(User $user, string $prompt, string $mediaType = 'none', ?string $mediaUrl = null, ?string $telegramFileId = null)
     {
         // 1. Check user channels count (user must have at least 1 channel connected)
         $channel = $user->channels()->where('is_active', true)->first();
@@ -774,7 +779,7 @@ class TelegramWebhookController extends Controller
         $loadingMessageId = $loading['result']['message_id'] ?? null;
 
         // Dispatch background job for AI call and similarity evaluation to avoid Webhook timeout (sync flow)
-        GenerateAiPostJob::dispatch($user->id, $channel->id, $prompt, $loadingMessageId, $mediaType, $mediaUrl);
+        GenerateAiPostJob::dispatch($user->id, $channel->id, $prompt, $loadingMessageId, $mediaType, $mediaUrl, false, $telegramFileId);
 
         return response()->json(['status' => 'post_generation_job_dispatched'], 200);
     }

@@ -27,6 +27,7 @@ class GenerateAiPostJob implements ShouldQueue
     protected string $mediaType;
     protected ?string $mediaUrl;
     protected bool $ignoreMissing;
+    protected ?string $telegramFileId;
 
     /**
      * Create a new job instance.
@@ -38,7 +39,8 @@ class GenerateAiPostJob implements ShouldQueue
         ?int $loadingMessageId = null,
         string $mediaType = 'none',
         ?string $mediaUrl = null,
-        bool $ignoreMissing = false
+        bool $ignoreMissing = false,
+        ?string $telegramFileId = null
     ) {
         $this->userId = $userId;
         $this->channelId = $channelId;
@@ -47,6 +49,7 @@ class GenerateAiPostJob implements ShouldQueue
         $this->mediaType = $mediaType;
         $this->mediaUrl = $mediaUrl;
         $this->ignoreMissing = $ignoreMissing;
+        $this->telegramFileId = $telegramFileId;
     }
 
     /**
@@ -117,6 +120,9 @@ class GenerateAiPostJob implements ShouldQueue
                     'ai_provider' => $aiResult['provider'],
                     'tokens_used' => $aiResult['prompt_tokens'] + $aiResult['completion_tokens'],
                     'cost' => $aiResult['cost'],
+                    'meta' => [
+                        'telegram_file_id' => $this->telegramFileId
+                    ]
                 ]);
 
                 // Extract missing fields
@@ -152,6 +158,9 @@ class GenerateAiPostJob implements ShouldQueue
                 'ai_provider' => $aiResult['provider'],
                 'tokens_used' => $aiResult['prompt_tokens'] + $aiResult['completion_tokens'],
                 'cost' => $aiResult['cost'],
+                'meta' => [
+                    'telegram_file_id' => $this->telegramFileId
+                ]
             ]);
 
             // 4. Run Duplicate Check
@@ -193,10 +202,12 @@ class GenerateAiPostJob implements ShouldQueue
                 ])
             ];
 
-            if ($post->media_type === 'photo' && !empty($post->media_url)) {
-                $telegram->sendPhoto($user->telegram_id, $post->media_url, $previewMsg, $params);
-            } elseif ($post->media_type === 'video' && !empty($post->media_url)) {
-                $telegram->sendVideo($user->telegram_id, $post->media_url, $previewMsg, $params);
+            $mediaTarget = $this->telegramFileId ?? $post->media_url;
+
+            if ($post->media_type === 'photo' && !empty($mediaTarget)) {
+                $telegram->sendPhoto($user->telegram_id, $mediaTarget, $previewMsg, $params);
+            } elseif ($post->media_type === 'video' && !empty($mediaTarget)) {
+                $telegram->sendVideo($user->telegram_id, $mediaTarget, $previewMsg, $params);
             } else {
                 $telegram->sendMessage($user->telegram_id, $previewMsg, $params);
             }

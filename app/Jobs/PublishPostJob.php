@@ -65,10 +65,12 @@ class PublishPostJob implements ShouldQueue
 
             // 3. Publish to Telegram Channel
             $result = [];
-            if ($post->media_type === 'photo' && !empty($post->media_url)) {
-                $result = $telegram->sendPhoto($channel->telegram_id, $post->media_url, $content);
-            } elseif ($post->media_type === 'video' && !empty($post->media_url)) {
-                $result = $telegram->sendVideo($channel->telegram_id, $post->media_url, $content);
+            $mediaTarget = $post->meta['telegram_file_id'] ?? $post->media_url;
+
+            if ($post->media_type === 'photo' && !empty($mediaTarget)) {
+                $result = $telegram->sendPhoto($channel->telegram_id, $mediaTarget, $content);
+            } elseif ($post->media_type === 'video' && !empty($mediaTarget)) {
+                $result = $telegram->sendVideo($channel->telegram_id, $mediaTarget, $content);
             } else {
                 $result = $telegram->sendMessage($channel->telegram_id, $content);
             }
