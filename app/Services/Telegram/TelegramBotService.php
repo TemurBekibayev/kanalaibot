@@ -227,6 +227,22 @@ class TelegramBotService
     }
 
     /**
+     * Set the list of the bot's commands.
+     */
+    public function setMyCommands(array $commands): bool
+    {
+        try {
+            $response = $this->callApi('setMyCommands', [
+                'commands' => $commands
+            ]);
+            return $response['ok'] ?? false;
+        } catch (\Exception $e) {
+            Log::channel('telegram_errors')->error("setMyCommands failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Perform Telegram Bot API request.
      */
     protected function callApi(string $method, array $data = []): array

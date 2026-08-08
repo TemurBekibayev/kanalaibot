@@ -103,6 +103,18 @@ class TelegramWebhookController extends Controller
             return $this->handleSuccessfulPayment($user, $message['successful_payment']);
         }
 
+        // Handle keyboard menu buttons mapped to commands
+        $keyboardCommands = [
+            '📊 Limit & Statistika' => '/stats',
+            '📺 Kanallar' => '/mychannels',
+            '💳 Premium Tarif' => '/pay',
+            '❓ Yordam' => '/help'
+        ];
+
+        if (isset($keyboardCommands[$text])) {
+            return $this->handleCommand($user, $keyboardCommands[$text]);
+        }
+
         // Handle commands
         if (str_starts_with($text, '/')) {
             return $this->handleCommand($user, $text);
@@ -172,6 +184,16 @@ class TelegramWebhookController extends Controller
         switch ($command) {
             case '/start':
                 $this->stateManager->clearState($user->telegram_id);
+
+                // Set bot commands menu list
+                $this->telegram->setMyCommands([
+                    ['command' => 'start', 'description' => 'Qayta ishga tushirish / Start'],
+                    ['command' => 'mychannels', 'description' => 'Kanallarni ulash va boshqarish'],
+                    ['command' => 'stats', 'description' => 'Statistika va limitlar'],
+                    ['command' => 'pay', 'description' => 'Premium tarifga o\'tish (to\'lov)'],
+                    ['command' => 'help', 'description' => 'Yordam bo\'limi']
+                ]);
+
                 $welcome = "👋 **Assalomu alaykum, {$user->name}!**\n\n" .
                            "Men — kanalingiz boshqaruvini osonlashtiradigan **AI Kanal Manager** botiman.\n\n" .
                            "🤖 **Asosiy imkoniyatlarim:**\n" .
@@ -191,6 +213,11 @@ class TelegramWebhookController extends Controller
                         ]
                     ])
                 ]);
+
+                // Send persistent reply keyboard
+                $this->telegram->sendMessage($user->telegram_id, "Botdan qulay foydalanishingiz uchun quyida menyuni faollashtirdik 👇", [
+                    'reply_markup' => json_encode($this->getReplyKeyboard($user))
+                ]);
                 break;
 
             case '/help':
@@ -200,7 +227,9 @@ class TelegramWebhookController extends Controller
                             "/pay - Premium/Biznes tarifga o'tish (to'lov)\n" .
                             "/stats - Foydalanish statistikangiz\n\n" .
                             "✍️ **Post yaratish uchun:** Shunchaki xohlagan matningizni botga yozib yuboring (masalan: `Cobalt sotiladi 2023 yil, 13000$, kraskasi toza, 45000 km yurgan`). Men chiroyli formatlangan post tayyorlab beraman!";
-                $this->telegram->sendMessage($user->telegram_id, $helpText);
+                $this->telegram->sendMessage($user->telegram_id, $helpText, [
+                    'reply_markup' => json_encode($this->getReplyKeyboard($user))
+                ]);
                 break;
 
             case '/stats':
@@ -875,5 +904,31 @@ class TelegramWebhookController extends Controller
         }
 
         return response()->json(['status' => 'payment_success_handled'], 200);
+    }
+
+    /**
+     * Generate custom persistent reply keyboard for user.
+     */
+    protected function getReplyKeyboard(User $user): array
+    {
+        $miniAppUrl = env('APP_URL') . "/mini-app/calendar?tg_id=" . $user->telegram_id;
+        
+        return [
+            'keyboard' => [
+                [
+                    ['text' => '📊 Limit & Statistika'],
+                    ['text' => '📺 Kanallar']
+                ],
+                [
+                    ['text' => '🚀 Mini Ilovani ochish', 'web_app' => ['url' => $miniAppUrl]]
+                ],
+                [
+                    ['text' => '💳 Premium Tarif'],
+                    ['text' => '❓ Yordam']
+                ]
+            ],
+            'resize_keyboard' => true,
+            'is_persistent' => true
+        ];
     }
 }
