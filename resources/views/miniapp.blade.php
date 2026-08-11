@@ -17,58 +17,81 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            dark: '#0f172a',
-                            card: 'rgba(30, 41, 59, 0.7)',
-                            accent: '#38bdf8',
+                        wallet: {
+                            bg: '#151f2b',
+                            card: '#212d3b',
                             border: 'rgba(255, 255, 255, 0.08)',
+                            textPrimary: '#ffffff',
+                            textSecondary: '#8093a8',
+                            blue: '#2f87f5',
+                            green: '#00c076',
+                            red: '#f64c5e',
+                            purple: '#8c65f7',
+                            pillActive: '#2a3848',
+                            navBg: '#1e2936'
                         }
                     }
                 }
             }
         }
     </script>
-    <!-- Custom Glassmorphic Styles -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            background-color: #151f2b;
             min-height: 100vh;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
         }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.45);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+        
+        /* Custom UI classes to mimic Wallet app */
+        .wallet-card {
+            background-color: #212d3b;
             border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
         }
-        .glass-input {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f8fafc;
+
+        .wallet-pill-active {
+            background-color: #2a3848;
+            color: #ffffff;
         }
-        .glass-input:focus {
-            border-color: #38bdf8;
+
+        .wallet-input {
+            background-color: #1a2430;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .wallet-input:focus {
+            border-color: #2f87f5;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 0 2px rgba(47, 135, 245, 0.2);
         }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
         ::-webkit-scrollbar-track {
             background: rgba(0,0,0,0.1);
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+        }
+        
+        /* Interactive animations */
+        .btn-active:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
         }
     </style>
 </head>
-<body class="text-slate-100 overflow-x-hidden antialiased">
+<body class="overflow-x-hidden antialiased select-none">
     <div id="app"></div>
 
-    <!-- Vue 3 directly loaded from CDN for zero-compilation deployment safety -->
+    <!-- Vue 3 directly loaded from CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="{{ secure_asset('js/miniapp.js') }}"></script>
 </body>
