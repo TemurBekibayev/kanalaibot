@@ -185,7 +185,7 @@ class GenerateAiPostJob implements ShouldQueue
             $previewMsg .= "Quyidagi tugmalardan birini tanlang:";
 
             // Set up inline keyboards
-            $miniAppUrl = env('APP_URL') . "/mini-app/calendar?tg_id=" . $user->telegram_id . "&post_id=" . $post->id;
+            $miniAppUrl = $telegram->getSignedMiniAppUrl($user->telegram_id, 'calendar', ['post_id' => $post->id]);
             
             $params = [
                 'reply_markup' => json_encode([

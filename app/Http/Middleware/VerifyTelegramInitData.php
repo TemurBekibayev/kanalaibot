@@ -18,6 +18,22 @@ class VerifyTelegramInitData
         $initData = $request->header('X-Telegram-Init-Data') ?: $request->input('init_data');
 
         if (empty($initData)) {
+            // Fallback to query string signed parameters (for Reply Keyboard WebApp launches)
+            $tgId = $request->input('tg_id');
+            $urlHash = $request->input('hash');
+            $botToken = config('services.telegram.bot_token');
+
+            if ($tgId && $urlHash && !empty($botToken)) {
+                $expectedHash = hash_hmac('sha256', (string) $tgId, $botToken);
+                if (hash_equals($expectedHash, $urlHash)) {
+                    $user = User::where('telegram_id', $tgId)->first();
+                    if ($user) {
+                        $request->attributes->set('telegram_user', $user);
+                        return $next($request);
+                    }
+                }
+            }
+
             return response()->json(['message' => 'Unauthorized: Missing Telegram initData.'], 401);
         }
 

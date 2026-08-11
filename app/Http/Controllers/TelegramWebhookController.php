@@ -243,7 +243,7 @@ class TelegramWebhookController extends Controller
                 
                 // Add Mini App WebApp Button if Premium
                 $buttons = [];
-                $miniAppUrl = env('APP_URL') . "/mini-app/stats?tg_id=" . $user->telegram_id;
+                $miniAppUrl = $this->telegram->getSignedMiniAppUrl($user->telegram_id, 'stats');
                 $buttons[] = [['text' => '📊 Grafik ko\'rinishida ko\'rish', 'web_app' => ['url' => $miniAppUrl]]];
                 
                 $this->telegram->sendMessage($user->telegram_id, $stats, [
@@ -316,7 +316,7 @@ class TelegramWebhookController extends Controller
                                 "Holat: " . ($channel->is_active ? 'Faol' : 'Nofaol') . "\n\n" .
                                 "Sozlamalarni o'zgartirish va eski postlarni avtomatik tozalash vaqtini belgilash uchun quyidagi tahrirlash panelidan foydalaning:";
                         
-                        $miniAppUrl = env('APP_URL') . "/mini-app/channels/{$channel->id}?tg_id=" . $user->telegram_id;
+                        $miniAppUrl = $this->telegram->getSignedMiniAppUrl($user->telegram_id, "channels/{$channel->id}");
                         $this->telegram->sendMessage($user->telegram_id, $text, [
                             'reply_markup' => json_encode([
                                 'inline_keyboard' => [
@@ -393,7 +393,7 @@ class TelegramWebhookController extends Controller
                     $text = "📅 **Postni rejalashtirish:**\n\n" .
                             "Iltimos, post chiqarish uchun mos vaqtni tanlang:";
                     
-                    $miniAppUrl = env('APP_URL') . "/mini-app/calendar?tg_id=" . $user->telegram_id . "&post_id=" . $post->id;
+                    $miniAppUrl = $this->telegram->getSignedMiniAppUrl($user->telegram_id, 'calendar', ['post_id' => $post->id]);
                     $this->telegram->sendMessage($user->telegram_id, $text, [
                         'reply_markup' => json_encode([
                             'inline_keyboard' => [
@@ -911,7 +911,7 @@ class TelegramWebhookController extends Controller
      */
     protected function getReplyKeyboard(User $user): array
     {
-        $miniAppUrl = env('APP_URL') . "/mini-app/calendar?tg_id=" . $user->telegram_id;
+        $miniAppUrl = $this->telegram->getSignedMiniAppUrl($user->telegram_id, 'calendar');
         
         return [
             'keyboard' => [

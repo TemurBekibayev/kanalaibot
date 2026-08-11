@@ -93,6 +93,6 @@
 
     <!-- Vue 3 directly loaded from CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="{{ secure_asset('js/miniapp.js') }}"></script>
+    <script src="{{ secure_asset('js/miniapp.js') }}?v={{ time() }}"></script>
 </body>
 </html>

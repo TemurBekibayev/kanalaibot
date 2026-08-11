@@ -483,6 +483,11 @@ const App = {
         // Telegram WebApp raw initData
         const tgInitData = window.Telegram?.WebApp?.initData || '';
 
+        // Extract query parameters for Reply Keyboard WebApp fallback signature
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTgId = urlParams.get('tg_id') || '';
+        const urlHash = urlParams.get('hash') || '';
+
         // Helper to format date
         const formatDate = (isoString) => {
             if (!isoString) return '';
@@ -516,6 +521,12 @@ const App = {
 
         // HTTP request wrapper with secure headers
         const apiRequest = async (url, method = 'GET', data = null) => {
+            // Append signature query parameters if Telegram initData is missing (e.g. from Reply Keyboard WebApp)
+            if (!tgInitData && urlTgId && urlHash) {
+                const separator = url.includes('?') ? '&' : '?';
+                url = `${url}${separator}tg_id=${urlTgId}&hash=${urlHash}`;
+            }
+
             const headers = {
                 'Content-Type': 'application/json',
                 'X-Telegram-Init-Data': tgInitData

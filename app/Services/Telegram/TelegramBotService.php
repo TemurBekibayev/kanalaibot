@@ -243,6 +243,22 @@ class TelegramBotService
     }
 
     /**
+     * Generate a cryptographically signed Mini App URL.
+     */
+    public function getSignedMiniAppUrl(int|string $telegramId, string $path = 'calendar', array $additionalParams = []): string
+    {
+        $params = array_merge([
+            'tg_id' => $telegramId,
+        ], $additionalParams);
+
+        // Generate HMAC-SHA256 signature for the tg_id using bot token
+        $hash = hash_hmac('sha256', (string) $telegramId, $this->token);
+        $params['hash'] = $hash;
+
+        return env('APP_URL') . "/mini-app/{$path}?" . http_build_query($params);
+    }
+
+    /**
      * Perform Telegram Bot API request.
      */
     protected function callApi(string $method, array $data = []): array
